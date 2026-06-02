@@ -11,12 +11,12 @@ KAFKA_BROKER = "localhost:9094"
 TOPIC_NAME = "fraud-stream-topic"
 
 CHECKPOINT_PATH = (
-    "s3a://fraud-detection-landing-zone/"
+    "s3a://fraud-streaming-landing-zone/"
     "checkpoints/fraud_stream/"
 )
 
 OUTPUT_PATH = (
-    "s3a://fraud-detection-landing-zone/"
+    "s3a://fraud-streaming-landing-zone/"
     "stream_transactions/"
 )
 

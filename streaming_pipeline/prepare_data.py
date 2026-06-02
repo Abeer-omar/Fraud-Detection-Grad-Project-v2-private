@@ -5,10 +5,26 @@ import subprocess
 from datetime import datetime, timedelta
 
 # =========================
-# CONFIGURATION
+# PATHS
 # =========================
 
-OUTPUT_DIR = "generated_data"
+BASE_DIR = os.path.dirname(
+    os.path.abspath(__file__)
+)
+
+PROJECT_ROOT = (
+    "/home/ubuntu/Fraud-Detection-Project"
+)
+
+DATAGEN_DIR = os.path.join(
+    PROJECT_ROOT,
+    "data_generation"
+)
+
+OUTPUT_DIR = os.path.join(
+    BASE_DIR,
+    "generated_data"
+)
 
 STREAM_DIR = os.path.join(
     OUTPUT_DIR,
@@ -25,9 +41,22 @@ HISTORICAL_FILE = os.path.join(
     "historical_transactions.csv"
 )
 
-STATE_FILE = "stream_state.txt"
+STATE_FILE = os.path.join(
+    BASE_DIR,
+    "stream_state.txt"
+)
 
-TEMP_OUTPUT_DIR = "temp_output"
+# IMPORTANT:
+# temp output must be inside data_generation
+# because Sparkov uses relative paths
+TEMP_OUTPUT_DIR = os.path.join(
+    DATAGEN_DIR,
+    "temp_output"
+)
+
+# =========================
+# CONFIGURATION
+# =========================
 
 CUSTOMER_COUNT = 2000
 
@@ -39,9 +68,15 @@ MAX_STREAM_TRANSACTIONS = 100
 # CREATE DIRECTORIES
 # =========================
 
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(
+    OUTPUT_DIR,
+    exist_ok=True
+)
 
-os.makedirs(STREAM_DIR, exist_ok=True)
+os.makedirs(
+    STREAM_DIR,
+    exist_ok=True
+)
 
 # =========================
 # DETERMINE MODE
@@ -82,10 +117,6 @@ else:
         f"stream_batch_{timestamp}.csv"
     )
 
-    # =========================
-    # LOAD STREAM STATE
-    # =========================
-
     if not os.path.exists(STATE_FILE):
 
         current_time = datetime.strptime(
@@ -95,14 +126,16 @@ else:
 
     else:
 
-        with open(STATE_FILE, "r") as f:
+        with open(
+            STATE_FILE,
+            "r"
+        ) as f:
 
             current_time = datetime.strptime(
                 f.read().strip(),
                 "%Y-%m-%d %H:%M:%S"
             )
 
-    # Move stream window forward
     next_time = current_time + timedelta(
         minutes=5
     )
@@ -115,33 +148,51 @@ else:
         "%m-%d-%Y"
     )
 
-print(f"\nRunning in {MODE.upper()} mode...\n")
+print(
+    f"\nRunning in {MODE.upper()} mode...\n"
+)
 
 # =========================
 # CLEAN TEMP DIRECTORY
 # =========================
 
-if os.path.exists(TEMP_OUTPUT_DIR):
+if os.path.exists(
+    TEMP_OUTPUT_DIR
+):
 
-    print("Removing old temp directory...\n")
+    print(
+        "Removing old temp directory...\n"
+    )
 
-    shutil.rmtree(TEMP_OUTPUT_DIR)
+    shutil.rmtree(
+        TEMP_OUTPUT_DIR
+    )
 
-os.makedirs(TEMP_OUTPUT_DIR, exist_ok=True)
+os.makedirs(
+    TEMP_OUTPUT_DIR,
+    exist_ok=True
+)
 
 # =========================
 # GENERATE DATA
 # =========================
 
-print("Generating Sparkov transaction data...\n")
+print(
+    "Generating Sparkov transaction data...\n"
+)
 
 command = [
-    "/home/ubuntu/Sparkov_Data_Generation/venv/bin/python",
+
+    "/home/ubuntu/Fraud-Detection-Project/venv/bin/python",
+
     "datagen.py",
+
     "-n",
     str(CUSTOMER_COUNT),
+
     "-o",
     TEMP_OUTPUT_DIR,
+
     START_DATE,
     END_DATE
 ]
@@ -150,9 +201,14 @@ command = [
 # REUSE CUSTOMERS
 # =========================
 
-if MODE == "stream" and os.path.exists(CUSTOMERS_FILE):
+if (
+    MODE == "stream"
+    and os.path.exists(CUSTOMERS_FILE)
+):
 
-    print("Reusing existing customers file...\n")
+    print(
+        "Reusing existing customers file...\n"
+    )
 
     command.extend([
         "-c",
@@ -163,7 +219,18 @@ if MODE == "stream" and os.path.exists(CUSTOMERS_FILE):
 # RUN GENERATOR
 # =========================
 
-subprocess.run(command)
+result = subprocess.run(
+    command,
+    cwd=DATAGEN_DIR
+)
+
+if result.returncode != 0:
+
+    print(
+        "\nData generation failed.\n"
+    )
+
+    exit(1)
 
 # =========================
 # SAVE CUSTOMERS
@@ -176,114 +243,171 @@ temp_customers = os.path.join(
 
 if MODE == "historical":
 
-    if os.path.exists(temp_customers):
+    if os.path.exists(
+        temp_customers
+    ):
 
         shutil.copy(
             temp_customers,
             CUSTOMERS_FILE
         )
 
-        print("Customers file saved.\n")
+        print(
+            "Customers file saved.\n"
+        )
 
 # =========================
-# MERGE CSV FILES
+# FIND CSV FILES
 # =========================
 
-print("Merging transaction CSV files...\n")
+print(
+    "Merging transaction CSV files...\n"
+)
 
 csv_files = glob.glob(
-    f"{TEMP_OUTPUT_DIR}/*.csv"
+    os.path.join(
+        TEMP_OUTPUT_DIR,
+        "*.csv"
+    )
 )
 
 transaction_files = []
 
 for file in csv_files:
 
-    if "customers.csv" not in file:
+    if (
+        "customers.csv"
+        not in file
+    ):
 
-        transaction_files.append(file)
+        transaction_files.append(
+            file
+        )
 
 if not transaction_files:
 
-    print("No transaction files found.")
+    print(
+        "\nNo transaction files found.\n"
+    )
 
-    exit()
+    print(
+        f"Checked path:\n{TEMP_OUTPUT_DIR}\n"
+    )
 
-# Sort files for consistency
+    exit(1)
+
 transaction_files.sort()
 
 # =========================
-# CREATE MERGED FILE
+# MERGE FILES
 # =========================
 
-with open(FINAL_OUTPUT_FILE, "w") as outfile:
+with open(
+    FINAL_OUTPUT_FILE,
+    "w"
+) as outfile:
 
-    # Write header once
-    with open(transaction_files[0], "r") as first_file:
+    with open(
+        transaction_files[0],
+        "r"
+    ) as first_file:
 
         header = first_file.readline()
 
-        outfile.write(header)
+        outfile.write(
+            header
+        )
 
-    # Merge all rows
     for file in transaction_files:
 
-        with open(file, "r") as infile:
+        with open(
+            file,
+            "r"
+        ) as infile:
 
-            next(infile)
+            next(
+                infile,
+                None
+            )
 
             for line in infile:
 
-                # Skip broken rows
                 if line.count("|") < 25:
 
                     continue
 
-                outfile.write(line)
+                outfile.write(
+                    line
+                )
 
-print("Merge complete.\n")
+print(
+    "Merge complete.\n"
+)
 
 # =========================
-# LIMIT STREAM SIZE
+# LIMIT STREAM BATCH
 # =========================
 
 if MODE == "stream":
 
-    print("Limiting stream batch size...\n")
+    print(
+        "Limiting stream batch size...\n"
+    )
 
-    with open(FINAL_OUTPUT_FILE, "r") as f:
+    with open(
+        FINAL_OUTPUT_FILE,
+        "r"
+    ) as f:
 
         lines = f.readlines()
 
-    header = lines[0]
+    if len(lines) > 1:
 
-    data = lines[1:]
+        header = lines[0]
 
-    # Limit transaction count
-    data = data[:MAX_STREAM_TRANSACTIONS]
+        data = lines[1:]
 
-    with open(FINAL_OUTPUT_FILE, "w") as f:
+        data = data[
+            :MAX_STREAM_TRANSACTIONS
+        ]
 
-        f.write(header)
+        with open(
+            FINAL_OUTPUT_FILE,
+            "w"
+        ) as f:
 
-        f.writelines(data)
+            f.write(
+                header
+            )
 
-    print(
-        f"Stream batch limited to "
-        f"{len(data)} transactions.\n"
-    )
+            f.writelines(
+                data
+            )
+
+        print(
+            f"Stream batch limited to "
+            f"{len(data)} rows.\n"
+        )
 
 # =========================
 # CLEAN TEMP FILES
 # =========================
 
-print("Cleaning temporary files...\n")
+print(
+    "Cleaning temporary files...\n"
+)
 
-if os.path.exists(TEMP_OUTPUT_DIR):
+if os.path.exists(
+    TEMP_OUTPUT_DIR
+):
 
-    shutil.rmtree(TEMP_OUTPUT_DIR)
+    shutil.rmtree(
+        TEMP_OUTPUT_DIR
+    )
 
-print("Cleanup complete.\n")
+print(
+    "Cleanup complete.\n"
+)
 
 # =========================
 # SAVE STREAM STATE
@@ -291,7 +415,10 @@ print("Cleanup complete.\n")
 
 if MODE == "stream":
 
-    with open(STATE_FILE, "w") as f:
+    with open(
+        STATE_FILE,
+        "w"
+    ) as f:
 
         f.write(
             next_time.strftime(
@@ -312,8 +439,14 @@ print("\nDone.\n")
 
 print("Generated files:")
 
-if os.path.exists(CUSTOMERS_FILE):
+if os.path.exists(
+    CUSTOMERS_FILE
+):
 
-    print(f"- {CUSTOMERS_FILE}")
+    print(
+        f"- {CUSTOMERS_FILE}"
+    )
 
-print(f"- {FINAL_OUTPUT_FILE}")
+print(
+    f"- {FINAL_OUTPUT_FILE}"
+)
