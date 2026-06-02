@@ -137,7 +137,7 @@ else:
             )
 
     next_time = current_time + timedelta(
-        minutes=5
+        days=1
     )
 
     START_DATE = current_time.strftime(
