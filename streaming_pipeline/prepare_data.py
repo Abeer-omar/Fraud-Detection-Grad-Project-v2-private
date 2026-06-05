@@ -3,6 +3,7 @@ import glob
 import shutil
 import subprocess
 from datetime import datetime, timedelta
+import random
 
 # =========================
 # PATHS
@@ -62,7 +63,7 @@ CUSTOMER_COUNT = 2000
 
 STREAM_START_DATE = "07-01-2024"
 
-MAX_STREAM_TRANSACTIONS = 100
+MAX_STREAM_TRANSACTIONS = 500
 
 # =========================
 # CREATE DIRECTORIES
@@ -351,7 +352,7 @@ print(
 if MODE == "stream":
 
     print(
-        "Limiting stream batch size...\n"
+        "Sampling stream batch...\n"
     )
 
     with open(
@@ -367,9 +368,13 @@ if MODE == "stream":
 
         data = lines[1:]
 
-        data = data[
-            :MAX_STREAM_TRANSACTIONS
-        ]
+        # Randomly sample transactions
+        if len(data) > MAX_STREAM_TRANSACTIONS:
+
+            data = random.sample(
+                data,
+                MAX_STREAM_TRANSACTIONS
+            )
 
         with open(
             FINAL_OUTPUT_FILE,
@@ -385,8 +390,8 @@ if MODE == "stream":
             )
 
         print(
-            f"Stream batch limited to "
-            f"{len(data)} rows.\n"
+            f"Randomly selected "
+            f"{len(data)} transactions.\n"
         )
 
 # =========================
