@@ -35,3 +35,5 @@ stream_batch_20260605_113502.csv
 stream_batch_20260605_114001.csv
 stream_batch_20260605_114501.csv
 stream_batch_20260605_115001.csv
+stream_batch_20260605_232501.csv
+stream_batch_20260605_233001.csv

@@ -116,10 +116,7 @@ df = (
     )
 
     # LIMIT DATA PER MICROBATCH
-    .option(
-        "maxOffsetsPerTrigger",
-        "1000"
-    )
+    #.option( "maxOffsetsPerTrigger", "1000")
 
     .load()
 )
@@ -174,8 +171,8 @@ query = (
 
     .partitionBy("trans_date")
 
-    # PROCESS EVERY 1 MINUTE
-    .trigger(processingTime="60 seconds")
+    # PROCESS EVERY 30 seconds
+    .trigger(processingTime="30 seconds")
 
     .start()
 )
