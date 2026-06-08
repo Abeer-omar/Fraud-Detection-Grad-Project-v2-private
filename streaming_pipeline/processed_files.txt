@@ -37,3 +37,16 @@ stream_batch_20260605_114501.csv
 stream_batch_20260605_115001.csv
 stream_batch_20260605_232501.csv
 stream_batch_20260605_233001.csv
+stream_batch_20260607_141801.csv
+stream_batch_20260607_142001.csv
+stream_batch_20260607_142202.csv
+stream_batch_20260607_142401.csv
+stream_batch_20260607_142602.csv
+stream_batch_20260607_142802.csv
+stream_batch_20260607_143001.csv
+stream_batch_20260607_143202.csv
+stream_batch_20260607_143401.csv
+stream_batch_20260607_143602.csv
+stream_batch_20260607_143801.csv
+stream_batch_20260607_144002.csv
+stream_batch_20260607_144201.csv
