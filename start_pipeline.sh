@@ -1,8 +1,7 @@
 #!/bin/bash
 
-echo "====================================="
 echo "Starting Fraud Detection Pipeline"
-echo "====================================="
+echo "-------------------------------------"
 
 PROJECT_ROOT=/home/ubuntu/Fraud-Detection-Project
 
@@ -17,7 +16,9 @@ cd $PROJECT_ROOT/docker
 
 ./start-kafka.sh
 
-sleep 15
+echo "Waiting for Kafka..."
+sleep 70
+echo "Kafka is ready."
 
 echo ""
 echo "2. Starting Spark Consumer..."
@@ -32,23 +33,21 @@ org.apache.hadoop:hadoop-aws:3.3.4 \
 stream_consumer.py \
 > $PROJECT_ROOT/logs/consumer.log 2>&1 &
 
-sleep 15
+sleep 20
 
 echo ""
 echo "3. Starting Kafka Producer..."
 echo ""
 
-nohup $PROJECT_ROOT/venv/bin/python \
+nohup $PROJECT_ROOT/venv/bin/python -u \
 stream_producer.py \
 > $PROJECT_ROOT/logs/producer.log 2>&1 &
 
 echo ""
-echo "====================================="
 echo "Pipeline Started Successfully"
-echo "====================================="
+echo "-------------------------------------"
 
-
-echo ""
-echo "tail -f $PROJECT_ROOT/logs/consumer.log"
-echo "tail -f $PROJECT_ROOT/logs/producer.log"
-echo ""
+#echo ""
+#echo "tail -f $PROJECT_ROOT/logs/consumer.log"
+#echo "tail -f $PROJECT_ROOT/logs/producer.log"
+#echo ""

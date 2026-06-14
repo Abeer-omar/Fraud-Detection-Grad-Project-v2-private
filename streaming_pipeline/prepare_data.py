@@ -345,6 +345,7 @@ print(
     "Merge complete.\n"
 )
 
+
 # =========================
 # LIMIT STREAM BATCH
 # =========================
@@ -366,6 +367,25 @@ if MODE == "stream":
 
         header = lines[0]
 
+        header_cols = header.strip().split("|")
+
+        fraud_index = None
+
+        if "is_fraud" in header_cols:
+
+            fraud_index = header_cols.index(
+                "is_fraud"
+            )
+
+            header_cols.remove(
+                "is_fraud"
+            )
+
+        header = (
+            "|".join(header_cols)
+            + "\n"
+        )
+
         data = lines[1:]
 
         # Randomly sample transactions
@@ -375,6 +395,26 @@ if MODE == "stream":
                 data,
                 MAX_STREAM_TRANSACTIONS
             )
+
+        # Remove is_fraud column
+        cleaned_data = []
+
+        for row in data:
+
+            cols = row.strip().split("|")
+
+            if (
+                fraud_index is not None
+                and fraud_index < len(cols)
+            ):
+
+                del cols[fraud_index]
+
+            cleaned_data.append(
+                "|".join(cols) + "\n"
+            )
+
+        data = cleaned_data
 
         with open(
             FINAL_OUTPUT_FILE,
@@ -393,6 +433,7 @@ if MODE == "stream":
             f"Randomly selected "
             f"{len(data)} transactions.\n"
         )
+
 
 # =========================
 # CLEAN TEMP FILES
