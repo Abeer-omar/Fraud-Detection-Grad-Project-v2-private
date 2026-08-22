@@ -35,8 +35,6 @@ A transaction record contains fields such as:
 <img width="976" height="816" alt="TransactSafe Record" src="https://github.com/user-attachments/assets/fe3ad542-e7a9-4783-9be0-8b6184ab4b98" />
 
 
-The transaction schema provides the information required by the downstream feature engineering and fraud detection stages.
-
 ---
 
 ### 1.2 Data Preparation — Historical & Streaming Modes
@@ -76,11 +74,6 @@ The pipeline supports two execution modes depending on whether a historical data
                        ▼                 ▼
                 Historical CSV       stream_batch_*.csv
 ```
-
-<p align="center">
-  <img src="pics/ingestion_flow.png" alt="Historical and Streaming Data Preparation Flow" width="650"/>
-</p>
-
 ---
 
 ### 1.3 Historical Data Mode
