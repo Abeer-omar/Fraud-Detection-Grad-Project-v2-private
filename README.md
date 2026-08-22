@@ -1,6 +1,7 @@
-<p align="center">
-  <img src="/pics/safe.png" alt="TransactSafe Logo" width="500"/>
-</p>
+
+
+<img width="1407" height="768" alt="image" src="https://github.com/user-attachments/assets/b1f00afc-21d4-4fcf-9dd5-f3e9bda3c412" />
+
 
 # Fraud-detection-pipeline
 
