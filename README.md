@@ -279,36 +279,58 @@ fraud-stream-topic
 Spark Structured Streaming
 ```
 
-Kafka provides the event-driven communication layer between the transaction producer and the Spark streaming application.
+Kafka provides the event-driven communication layer between the transaction producer and the Spark Streaming application.
 
 ---
 
 ### 1.9 Spark Structured Streaming
 
-**Spark Structured Streaming** consumes the transaction events from Kafka and processes them continuously.
+**Spark Structured Streaming** is used as the streaming consumer between **Apache Kafka** and **Amazon S3**.
 
-The streaming consumer:
+It continuously consumes transaction records from the Kafka topic and writes the incoming records to the S3 bucket as they arrive.
+
+The streaming flow is:
 
 ```text
 Kafka
   │
   ▼
-Read fraud-stream-topic
+fraud-stream-topic
   │
   ▼
-Parse Transaction Events
+Spark Structured Streaming
   │
   ▼
-Apply Schema
+Consume Incoming Records
   │
   ▼
-Process Streaming Data
-  │
-  ▼
-Write to Amazon S3
+Write Records to Amazon S3
 ```
 
-Spark acts as the processing bridge between the Kafka event stream and the AWS S3 data lake.
+Spark Structured Streaming acts as the **streaming data transfer layer**, continuously moving transaction records from Kafka into the S3 data lake.
+
+The records are written to S3 in **Parquet format**, making the incoming transaction data immediately available for the downstream Databricks and Machine Learning pipeline.
+
+```text
+Real-Time Transaction
+        │
+        ▼
+      Kafka
+        │
+        │  Transaction Record
+        ▼
+Spark Structured Streaming
+        │
+        │  As records arrive
+        ▼
+     Amazon S3
+        │
+        ▼
+   Databricks / ML
+```
+
+This enables the pipeline to maintain a continuously updated S3 data lake as new transaction events are produced.
+
 
 ---
 
