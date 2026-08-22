@@ -1,5 +1,4 @@
 services:
-
   kafka:
     image: docker.io/bitnamilegacy/kafka:4.0.0
     container_name: kafka
@@ -7,7 +6,7 @@ services:
     user: root
 
     ports:
-      - "9094:9094"
+      - "80:9094"
 
     networks:
       - kafka-net
@@ -16,7 +15,6 @@ services:
       - kafka_data:/bitnami/kafka
 
     environment:
-
       # KRaft Mode
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
       - KAFKA_CFG_NODE_ID=1
@@ -24,11 +22,11 @@ services:
 
       # Listener Configuration
       - KAFKA_CFG_LISTENERS=INTERNAL://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-
-      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:9092,EXTERNAL://${PUBLIC_IP}:9094
+      
+      # Advertise port 80 to external clients like Databricks
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:9092,EXTERNAL://${PUBLIC_IP}:80
 
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
 

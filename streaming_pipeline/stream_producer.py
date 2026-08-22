@@ -9,7 +9,9 @@ import os
 # CONFIGURATION
 # =========================
 
-KAFKA_BROKER = "localhost:9094"
+#KAFKA_BROKER = "localhost:9094"
+
+KAFKA_BROKER = "localhost:80"
 
 TOPIC_NAME = "fraud-stream-topic"
 

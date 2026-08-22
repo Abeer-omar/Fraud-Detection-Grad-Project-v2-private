@@ -6,7 +6,7 @@ from pyspark.sql.functions import from_json, col
 # CONFIG
 # =========================
 
-KAFKA_BROKER = "localhost:9094"
+KAFKA_BROKER = "localhost:80"
 
 TOPIC_NAME = "fraud-stream-topic"
 
@@ -107,6 +107,8 @@ df = (
         "subscribe",
         TOPIC_NAME
     )
+
+    .option("failOnDataLoss", "false")
 
     # KEEP EARLIEST
     # CHECKPOINTS HANDLE RESUMING
