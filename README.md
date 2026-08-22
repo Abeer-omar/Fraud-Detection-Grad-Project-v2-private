@@ -32,9 +32,8 @@ A transaction record contains fields such as:
 • merch_long     → Merchant longitude
 ```
 
-<p align="center">
-  <img src="pics/transaction_schema.png" alt="Transaction Data Schema" width="800"/>
-</p>
+<img width="976" height="816" alt="TransactSafe Record" src="https://github.com/user-attachments/assets/fe3ad542-e7a9-4783-9be0-8b6184ab4b98" />
+
 
 The transaction schema provides the information required by the downstream feature engineering and fraud detection stages.
 
