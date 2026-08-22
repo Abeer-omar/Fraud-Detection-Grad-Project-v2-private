@@ -1,47 +1,69 @@
-## 1- Data Streaming & Ingestion
+<p align="center">
+  <img src="/pics/safe.png" alt="TransactSafe Logo" width="500"/>
+</p>
 
-The **Data Streaming & Ingestion** component is the first stage of the **TransactSafe** fraud detection pipeline. This part was implemented on **AWS** and is responsible for preparing both **historical transaction data** and **real-time streaming data**, running the ingestion infrastructure, and delivering transaction data to **Amazon S3** for downstream fraud detection and Machine Learning.
+# Fraud-detection-pipeline
 
-The ingestion layer combines **Python, Apache Kafka, Spark Structured Streaming, Docker, AWS EC2, and Amazon S3**.
+**TransactSafe** is an event-driven data streaming pipeline designed for **real-time credit card fraud detection and dimensional data warehousing**.
+
+The project combines real-time data ingestion, AWS cloud infrastructure, Apache Kafka, Spark Structured Streaming, Databricks, Machine Learning, MLflow, Snowflake, and Power BI to build an end-to-end fraud detection solution.
 
 ---
 
-### 1.1 Transaction Data
+# 1- Data Streaming & Ingestion
+
+The **Data Streaming & Ingestion** component is the first stage of the **TransactSafe** fraud detection pipeline.
+
+This part was implemented on **Amazon Web Services (AWS)** and is responsible for preparing both **historical transaction data** and **real-time streaming data**, running the ingestion infrastructure, and delivering transaction data to **Amazon S3** for downstream fraud detection and Machine Learning.
+
+The ingestion layer combines **Python, Apache Kafka, Spark, Spark Structured Streaming, Docker, AWS EC2, and Amazon S3**.
+
+---
+
+## 1.1 Transaction Data
 
 The pipeline works with credit card transaction data containing customer, card, transaction, merchant, financial, and geographical attributes.
 
 A transaction record contains fields such as:
 
 ```text
-• ssn            → Customer identifier
-• cc_num         → Credit card number
-• first / last   → Customer name
-• gender         → Customer gender
+• ssn                  → Customer identifier
+• cc_num               → Credit card number
+• first / last         → Customer information
+• gender               → Customer attribute
 • street / city / state / zip → Customer address
-• lat / long     → Customer geographical coordinates
-• job / dob      → Customer demographic information
-• acct_num       → Account number
-• trans_num      → Unique transaction identifier
-• trans_date     → Transaction date
-• trans_time     → Transaction time
-• unix_time      → Unix timestamp
-• category       → Transaction category
-• amt            → Transaction amount
-• merchant       → Merchant name
-• merch_lat      → Merchant latitude
-• merch_long     → Merchant longitude
+• lat / long           → Customer geographical coordinates
+• job / dob            → Customer information
+• acct_num             → Account number
+• trans_num            → Unique transaction identifier
+• trans_date           → Transaction date
+• trans_time           → Transaction time
+• unix_time            → Unix timestamp
+• category             → Transaction category
+• amt                  → Transaction amount
+• merchant             → Merchant name
+• merch_lat            → Merchant latitude
+• merch_long           → Merchant longitude
 ```
 
-<img width="976" height="816" alt="TransactSafe Record" src="https://github.com/user-attachments/assets/fe3ad542-e7a9-4783-9be0-8b6184ab4b98" />
+<p align="center">
+  <img src="pics/transaction_schema.png" alt="Transaction Data Schema" width="800"/>
+</p>
 
+> **Note:** The screenshot used in the repository should contain anonymized/redacted customer and card information.
 
 ---
 
-### 1.2 Data Preparation — Historical & Streaming Modes
+## 1.2 Data Preparation — Historical & Streaming Modes
 
-A major part of the ingestion layer is the **data preparation process**, implemented through `prepare_data.py`.
+The ingestion layer supports two different execution modes:
 
-The pipeline supports two execution modes depending on whether a historical dataset already exists.
+* **Historical Mode** – used to generate and prepare the initial historical dataset.
+* **Streaming Mode** – used to generate new transaction batches that simulate real-time transaction events.
+
+The main preparation logic is handled by `prepare_data.py`.
+
+The workflow first checks whether the historical dataset already exists.
 
 ```text
                          prepare_data.py
@@ -55,12 +77,12 @@ The pipeline supports two execution modes depending on whether a historical data
                 Historical Mode    Streaming Mode
                        │                 │
                        ▼                 ▼
-                Generate data      Reuse existing
-                                  customers
+                Execute Spark      Reuse existing
+                data generation    customers
                        │                 │
                        ▼                 ▼
-              Generate customers   Read stream_state.txt
-              + transactions       to determine current day
+              Generate Customers   Read stream_state.txt
+              + Transactions       to determine current day
                        │                 │
                        ▼                 ▼
               Merge transaction    Randomly sample
@@ -74,13 +96,18 @@ The pipeline supports two execution modes depending on whether a historical data
                        ▼                 ▼
                 Historical CSV       stream_batch_*.csv
 ```
+
+<p align="center">
+  <img src="pics/ingestion_flow.png" alt="Historical and Streaming Data Preparation Flow" width="650"/>
+</p>
+
 ---
 
-### 1.3 Historical Data Mode
+## 1.3 Historical Data Mode
 
 The **Historical Mode** is responsible for creating the initial transaction dataset used as the historical foundation of the pipeline.
 
-When a historical dataset does not already exist, `prepare_data.py` triggers the data generation process.
+When the historical dataset does not exist, `prepare_data.py` executes the data generation process.
 
 The flow is:
 
@@ -110,14 +137,14 @@ Validate Records
       └── Skip Malformed Rows
       │
       ▼
-Clean Temporary Output
+Delete Temporary Output
       │
       ▼
 historical_transactions.csv
 customers.csv
 ```
 
-The historical mode creates the initial data foundation that can later be used for:
+The historical dataset provides the foundation for:
 
 * Historical analysis
 * Data profiling
@@ -125,23 +152,23 @@ The historical mode creates the initial data foundation that can later be used f
 * Model training
 * Model evaluation
 * Fraud analysis
-* Model retraining
+* Periodic model retraining
 
 ---
 
-### 1.4 Real-Time Streaming Mode
+## 1.4 Real-Time Streaming Mode
 
-Once the historical dataset exists, the pipeline switches to **Streaming Mode**.
+Once the historical dataset exists, the pipeline operates in **Streaming Mode**.
 
-Instead of regenerating the complete dataset, the streaming process reuses the existing customer information and generates a controlled stream of new transactions.
+Instead of regenerating the complete dataset, the streaming process reuses the existing customer data and generates new transaction batches.
 
 The streaming process:
 
-1. Reuses the existing customer data.
+1. Reuses the existing customer information.
 2. Reads `stream_state.txt` to determine the current streaming day.
 3. Randomly samples up to **500 transactions**.
 4. Removes the `is_fraud` column from the streaming data.
-5. Cleans the temporary output.
+5. Deletes temporary output.
 6. Produces a new streaming batch.
 
 Example output:
@@ -150,59 +177,54 @@ Example output:
 stream_batch_*.csv
 ```
 
-This allows the pipeline to simulate a continuous stream of transactions while keeping the historical dataset separate from incoming events.
+This allows the pipeline to simulate a continuous stream of new credit card transactions.
 
 ---
 
-### 1.5 Why Remove `is_fraud` from Streaming Data?
+## 1.5 Why Remove `is_fraud` from Streaming Data?
 
-The historical dataset contains the `is_fraud` field because it represents the **ground-truth label** used during model development and evaluation.
+The historical dataset contains the `is_fraud` field because it represents the known **ground-truth label**.
 
-For real-time transactions, however, the fraud status should not be provided to the scoring pipeline.
+For real-time transactions, however, the fraud status is not known at the time the transaction occurs.
 
-Therefore, the streaming preparation step removes:
-
-```text
-is_fraud
-```
-
-before the transaction enters the real-time detection pipeline.
-
-This better represents a real-world fraud detection scenario:
+Therefore, the `is_fraud` column is removed from the streaming data before it enters the real-time detection pipeline.
 
 ```text
 Historical Data
       │
-      ├── Features
-      └── is_fraud → Known Ground Truth
-                       │
-                       ▼
-                  Model Training
+      ├── Transaction Features
+      │
+      └── is_fraud
+             │
+             ▼
+       Model Training
 
 
 Real-Time Data
       │
-      └── Features only
+      └── Transaction Features
                │
                ▼
           ML Model
                │
                ▼
-        Fraud Probability
+       Fraud Probability
                │
                ▼
           Fraud Alert
 ```
 
+This makes the streaming pipeline representative of a real-world fraud detection scenario where the model must predict fraud from the available transaction information.
+
 ---
 
-### 1.6 AWS Infrastructure
+## 1.6 AWS Infrastructure
 
 The ingestion environment was deployed on **Amazon Web Services (AWS)**.
 
 An **AWS EC2 instance** was used as the compute environment for the ingestion infrastructure.
 
-The environment contains the components required to generate, stream, consume, and store transaction data.
+The EC2 environment hosted the services required for generating and streaming transaction data.
 
 ```text
                          AWS
@@ -228,40 +250,46 @@ The environment contains the components required to generate, stream, consume, a
                     Amazon S3
 ```
 
+<p align="center">
+  <img src="pics/aws_architecture.png" alt="AWS Data Ingestion Architecture" width="900"/>
+</p>
+
 ---
 
-### 1.7 Dockerized Kafka Infrastructure
+## 1.7 Dockerized Kafka Infrastructure
 
 The Kafka environment was containerized using **Docker** and managed through **Docker Compose**.
 
 The repository contains a dedicated `docker` directory for the Kafka infrastructure.
 
-The Dockerized setup provides a reproducible environment for the streaming components and simplifies starting and stopping the Kafka services.
+Docker provides a reproducible environment for running the Kafka services and simplifies starting and stopping the streaming infrastructure.
 
 ```text
 docker/
-└── Kafka Environment
-       │
-       ▼
+    │
+    ▼
+Kafka Environment
+    │
+    ▼
 Kafka Broker
-       │
-       ▼
+    │
+    ▼
 fraud-stream-topic
 ```
 
 ---
 
-### 1.8 Real-Time Event Streaming with Kafka
+## 1.8 Kafka Producer
 
-After the streaming batches are generated, the transaction events are published to **Apache Kafka**.
+A Python-based transaction producer is used to publish the generated transaction batches to **Apache Kafka**.
 
-The main Kafka topic used by the pipeline is:
+The transaction events are published to:
 
 ```text
 fraud-stream-topic
 ```
 
-The real-time flow is:
+The streaming flow is:
 
 ```text
 stream_batch_*.csv
@@ -274,16 +302,13 @@ Kafka Broker
         │
         ▼
 fraud-stream-topic
-        │
-        ▼
-Spark Structured Streaming
 ```
 
-Kafka provides the event-driven communication layer between the transaction producer and the Spark Streaming application.
+Kafka acts as the event streaming layer between the transaction producer and the Spark streaming consumer.
 
 ---
 
-### 1.9 Spark Structured Streaming
+## 1.9 Spark Structured Streaming
 
 **Spark Structured Streaming** is used as the streaming consumer between **Apache Kafka** and **Amazon S3**.
 
@@ -309,7 +334,7 @@ Write Records to Amazon S3
 
 Spark Structured Streaming acts as the **streaming data transfer layer**, continuously moving transaction records from Kafka into the S3 data lake.
 
-The records are written to S3 in **Parquet format**, making the incoming transaction data immediately available for the downstream Databricks and Machine Learning pipeline.
+The records are written to **Parquet format**, making the incoming transaction data available for the downstream Databricks and Machine Learning pipeline.
 
 ```text
 Real-Time Transaction
@@ -317,11 +342,11 @@ Real-Time Transaction
         ▼
       Kafka
         │
-        │  Transaction Record
+        │ Transaction Record
         ▼
 Spark Structured Streaming
         │
-        │  As records arrive
+        │ As records arrive
         ▼
      Amazon S3
         │
@@ -329,19 +354,18 @@ Spark Structured Streaming
    Databricks / ML
 ```
 
-This enables the pipeline to maintain a continuously updated S3 data lake as new transaction events are produced.
-
-
 ---
 
-### 1.10 Amazon S3 Data Lake
+## 1.10 Amazon S3 Data Lake
 
 The processed transaction stream is ultimately stored in **Amazon S3**, which acts as the data lake layer for the downstream pipeline.
 
 The streaming data is stored in **Parquet** format and organized using transaction-date partitions.
 
+Example:
+
 ```text
-Amazon S3
+s3://<bucket-name>/
 │
 └── transactions/
     │
@@ -355,19 +379,29 @@ Amazon S3
           └── *.parquet
 ```
 
-Using Parquet provides:
+<p align="center">
+  <img src="pics/s3_bucket.png" alt="Amazon S3 Transaction Data" width="850"/>
+</p>
+
+### Why Parquet?
+
+Parquet was selected because it provides:
 
 * Columnar storage
-* Compression
+* Efficient compression
+* Reduced storage requirements
 * Efficient analytical processing
 * Compatibility with Spark and Databricks
-* Reduced storage and processing overhead
 
-Date-based partitioning also allows downstream processing engines to read only the required partitions.
+### Why Partition by Transaction Date?
+
+The data is partitioned by `trans_date`.
+
+This allows downstream processing engines to use **partition pruning**, reducing the amount of data that needs to be scanned when processing a specific date or time range.
 
 ---
 
-### 1.11 Streaming State Management
+## 1.11 Streaming State Management
 
 The streaming preparation process uses:
 
@@ -377,9 +411,7 @@ stream_state.txt
 
 to keep track of the current streaming day.
 
-This allows the streaming process to continue from the appropriate point rather than starting the simulation from the beginning every time.
-
-The state-management flow is:
+This allows the streaming process to determine the appropriate day for the next generated batch and continue the streaming simulation from the current state.
 
 ```text
 stream_state.txt
@@ -399,18 +431,18 @@ Kafka
 
 ---
 
-### 1.12 Pipeline Automation
+## 1.12 Pipeline Automation
 
-The ingestion repository also contains scripts for controlling the pipeline:
+The ingestion repository contains scripts for starting and stopping the pipeline:
 
 ```text
 start_pipeline.sh
 stop_pipeline.sh
 ```
 
-These scripts simplify starting and stopping the required ingestion services.
+These scripts simplify the execution and management of the ingestion services.
 
-The repository is organized as follows:
+The ingestion directory is organized as follows:
 
 ```text
 1- Data Streaming & Ingestion/
@@ -439,7 +471,7 @@ The repository is organized as follows:
 
 ---
 
-### 1.13 End-to-End Data Flow
+## 1.13 End-to-End Data Flow
 
 The complete ingestion process can be summarized as:
 
@@ -495,7 +527,7 @@ The complete ingestion process can be summarized as:
 
 ---
 
-### 1.14 Technologies Used
+## 1.14 Technologies Used
 
 | Technology         | Purpose                                  |
 | :----------------- | :--------------------------------------- |
@@ -511,7 +543,7 @@ The complete ingestion process can be summarized as:
 
 ---
 
-### 1.15 Key Responsibilities
+## 1.15 Key Responsibilities
 
 My contribution covered the ingestion layer from **data preparation to the AWS S3 data lake**:
 
@@ -535,4 +567,113 @@ My contribution covered the ingestion layer from **data preparation to the AWS S
 * Validated the end-to-end flow from data generation to S3.
 * Prepared the S3 data layer for the downstream **Databricks Machine Learning & Streaming Pipeline**.
 
-> **Output of this stage:** Historical transaction data and continuously generated real-time transaction events are prepared, streamed through Kafka, processed using Spark Structured Streaming, and delivered to the AWS S3 data lake for downstream fraud detection and Machine Learning.
+> **Output of this stage:** Historical transaction data and continuously generated real-time transaction events are prepared, streamed through Kafka, consumed by Spark Structured Streaming, and delivered to the AWS S3 data lake for downstream fraud detection and Machine Learning.
+
+---
+
+# 2- Machine Learning & Streaming Pipeline Integration
+
+The Machine Learning component in **TransactSafe** is designed as a distributed, real-time scoring engine integrated directly into **PySpark Structured Streaming**. The trained model is embedded inside Spark worker memory via **MLflow PySpark UDFs**, enabling high-throughput, parallel inference on live S3 data streams.
+
+---
+
+## 2.1 Data Topography & Feature Schema
+
+The pipeline processes credit card transaction streams containing temporal, geospatial, financial, and cardholder identity signals:
+
+<p align="center">
+  <img src="pics/data_over.png" alt="Transaction Data Schema & Topography" width="800"/>
+</p>
+
+```text
+• Timestamp (trans_date + trans_time)     ──► Temporal context (hour of day, day of week, month)
+• Cardholder & Geo (cc_num, lat, long)    ──► Who is transacting & customer location coordinates
+• Spend Amount (amt)                      ──► Financial amount spent
+• Category & Merchant (category, merch)   ──► Transaction category & merchant location (merch_lat, merch_long)
+• Target Label (is_fraud)                 ──► Ground-truth fraud flag (0 = Legit, 1 = Fraud)
+```
+
+---
+
+## 2.2 How PySpark Handles Features & ML Scoring
+
+During live streaming execution, PySpark worker nodes execute parallel feature transformations across micro-batches before evaluating model probabilities:
+
+```text
+                         [ Incoming S3 Stream ]
+                                   │
+                                   ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│                     PYSPARK DISTRIBUTED WORKER NODES                      │
+│                                                                           │
+│ 1. Vectorized Geospatial Features ──► Haversine Distance (Customer ↔ Merch)│
+│ 2. Rolling Velocity Windows       ──► 1h / 24h Txn Counts & Spend Averages│
+│ 3. Historical Target Encoding     ──► Broadcast Join (Category/Merchant Rate)│
+│                                                                           │
+│ 4. In-Memory MLflow UDF Scoring   ──► predict_udf(*20_features)          │
+└───────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+          [ Probability >= 0.9980 Cutoff ──► Flagged Fraud Alert Outflow ]
+```
+
+---
+
+## 2.3 Databricks Orchestration Workflows
+
+The ML pipeline decouples 24/7 continuous streaming inference from periodic model retraining using two Databricks Job Workflows:
+
+| Workflow Job            | Script Location                                                                        | Frequency / Trigger         | Runtime Execution Mode        | Core Responsibility                                                                                                                                   |
+| :---------------------- | :------------------------------------------------------------------------------------- | :-------------------------- | :---------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Real-Time Detection** | [`realtime_detection.py`](./2-%20Machine%20Learning/src/scoring/realtime_detection.py) | **24/7 Continuous** Stream  | PySpark Structured Streaming  | Listens to S3 transaction streams, computes 20 features on the fly, scores rows via MLflow UDF, and outputs fraud alerts using streaming checkpoints. |
+| **Weekly Retraining**   | [`weekly_retrain.py`](./2-%20Machine%20Learning/src/retraining/weekly_retrain.py)      | **Weekly Cron** (Scheduled) | PySpark Batch / Pandas Driver | Retrains CatBoost on historical Delta data, evaluates test metrics, and promotes new model versions in MLflow.                                        |
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                             DATABRICKS CLOUD                                │
+│                                                                             │
+│  [ 1: REAL-TIME DETECTION (24/7 Continuous Streaming) ]                    │
+│  S3 Raw Bucket ──► PySpark Structured Streaming ──► Feature Engineering     │
+│                                                           │                 │
+│  Alert Output ◄── Cutoff Threshold (>= 0.9980) ◄── MLflow Model UDF        │
+│                                                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  [ 2: WEEKLY MODEL RETRAINING (Scheduled Batch Workflow) ]                  │
+│  Historical Delta/S3 ──► Feature Pipeline ──► CatBoost Train ──► MLflow     │
+│                                                                     │       │
+│  MLflow Registry ("Production") ◄───────────────────────────────────┘       │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+> 📖 **Deep ML Documentation & Experiments**
+> For in-depth ML specifics—including exploratory data analysis (EDA), hyperparameter tuning trials (SMOTENC vs. native weighting), CatBoost model benchmarks, and SHAP feature explainability—check the detailed ML subfolder README:
+>
+> ➡️ **[View Detailed Machine Learning Directory](./2-%20Machine%20Learning)**
+
+---
+
+# 3- Data Warehouse & Analytics
+
+The processed fraud detection data is then integrated into the downstream data warehousing and analytics layer.
+
+The final stages of the project use the detected fraud results and transaction data for **historical analysis, dimensional data warehousing, and visualization**.
+
+```text
+AWS S3
+   │
+   ▼
+Databricks
+   │
+   ▼
+Fraud Detection Results
+   │
+   ▼
+Snowflake Data Warehouse
+   │
+   ▼
+Power BI
+   │
+   ▼
+Analytics & Reporting
+```
