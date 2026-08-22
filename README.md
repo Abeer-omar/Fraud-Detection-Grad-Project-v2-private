@@ -1,107 +1,281 @@
-# TransactSafe – Streaming Ingestion & S3 Data Lake
+## 1- Data Streaming & Ingestion
 
-## 📌 My Contribution
+The **Data Streaming & Ingestion** layer is the first stage of the **TransactSafe** fraud detection pipeline. It was implemented on **Amazon Web Services (AWS)** and is responsible for ingesting both **historical transaction data** and **real-time transaction streams**, processing the incoming events, and storing them in **Amazon S3** as the foundation for the downstream Machine Learning and fraud detection pipeline.
 
-I was responsible for the **real-time data ingestion layer** of the TransactSafe fraud detection pipeline, from generating/streaming transaction events through **Apache Kafka** to storing the incoming data in **Amazon S3** as the raw data lake layer.
-
-My part establishes the foundation for the downstream fraud detection and analytics components by continuously collecting transaction events and persisting them in a scalable cloud storage environment.
+The ingestion architecture combines **AWS EC2, Docker, Apache Kafka, Python, Spark Structured Streaming, and Amazon S3** to provide a scalable and continuous data ingestion layer.
 
 ---
 
-## 🏗️ My Part of the Architecture
+### 1. AWS-Based Ingestion Architecture
+
+The complete ingestion environment was deployed on **AWS**, with an **EC2 instance** used to host the streaming infrastructure.
+
+The architecture can be divided into two ingestion modes:
+
+* **Historical Data Mode** – used to load existing transaction records into the data lake.
+* **Real-Time Streaming Mode** – used to continuously generate and stream new transaction events through Kafka and Spark into S3.
 
 ```text
-Transaction Data
-      │
-      ▼
-Data Generator
-      │
-      ▼
-Apache Kafka
-      │
-      ▼
-Spark Structured Streaming
-      │
-      ▼
-Amazon S3
-   Raw/Bronze
-      │
-      ▼
-Downstream Processing
-(Databricks / Spark / AI Scoring)
+                         AWS CLOUD
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│                         Amazon EC2                                      │
+│                  ┌─────────────────────┐                                 │
+│                  │   Docker Environment│                                 │
+│                  │                     │                                 │
+│                  │  Kafka + Producer   │                                 │
+│                  └──────────┬──────────┘                                 │
+│                             │                                            │
+│                             ▼                                            │
+│                     Apache Kafka                                         │
+│                  fraud-stream-topic                                      │
+│                             │                                            │
+│                             ▼                                            │
+│              Spark Structured Streaming                                  │
+│                             │                                            │
+│                             ▼                                            │
+│                       Amazon S3                                          │
+│                       Data Lake                                          │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
----
-
-## 🔄 Data Ingestion Flow
-
-### 1. Transaction Data Generation
-
-A transaction data generator produces simulated credit card transaction events continuously.
-
-Each transaction contains information such as:
-
-* Transaction ID
-* Customer information
-* Credit card information
-* Transaction amount
-* Transaction timestamp
-* Merchant information
-* Transaction location
-* Other transaction attributes required for fraud detection
-
-The generated transactions are divided into streaming batches and sent to Kafka.
+<p align="center">
+  <img src="pics/aws_architecture.png" alt="AWS Data Ingestion Architecture" width="900"/>
+</p>
 
 ---
 
-### 2. Kafka Streaming
+### 2. Historical Data Ingestion
 
-**Apache Kafka** is used as the message broker for the real-time transaction stream.
+The first ingestion mode handles the **historical transaction dataset**.
 
-The producer publishes transaction events to the Kafka topic:
+Historical transaction records are uploaded to the AWS environment and stored in **Amazon S3**. This provides the historical data required by the downstream pipeline for model development, feature engineering, analysis, and retraining.
+
+```text
+Historical Transaction Dataset
+              │
+              ▼
+        AWS / Amazon S3
+              │
+              ▼
+      Raw Historical Data
+              │
+              ▼
+      Databricks / Spark
+              │
+              ▼
+       Feature Engineering
+              │
+              ▼
+        ML / Retraining
+```
+
+<p align="center">
+  <img src="pics/historical_data.png" alt="Historical Data Ingestion" width="800"/>
+</p>
+
+The historical data provides the foundation for:
+
+* Exploratory Data Analysis (EDA)
+* Data quality analysis
+* Feature engineering
+* Model training
+* Model evaluation
+* Historical fraud analysis
+* Periodic model retraining
+
+---
+
+### 3. Real-Time Streaming Ingestion
+
+The second mode is the **real-time streaming pipeline**.
+
+A Python-based transaction producer continuously generates transaction events and publishes them to **Apache Kafka**.
+
+The Kafka topic used for the transaction stream is:
 
 ```text
 fraud-stream-topic
 ```
 
-Kafka provides a scalable and fault-tolerant mechanism for receiving transaction events before they are processed by the streaming application.
+The events are then consumed by **Spark Structured Streaming**, processed, and written to Amazon S3.
 
 ```text
-Producer
-   │
-   │ Transaction Events
-   ▼
-Kafka Broker
-   │
-   └── fraud-stream-topic
+┌───────────────────┐
+│ Transaction       │
+│ Data Generator    │
+└─────────┬─────────┘
+          │
+          │ Real-Time Events
+          ▼
+┌───────────────────┐
+│ Apache Kafka      │
+│                   │
+│ fraud-stream-topic│
+└─────────┬─────────┘
+          │
+          ▼
+┌───────────────────┐
+│ Spark Structured  │
+│ Streaming         │
+└─────────┬─────────┘
+          │
+          ▼
+┌───────────────────┐
+│ Amazon S3         │
+│ Raw Data Lake     │
+└─────────┬─────────┘
+          │
+          ▼
+   Databricks ML Pipeline
 ```
 
----
-
-### 3. Spark Structured Streaming
-
-**Apache Spark Structured Streaming** consumes transaction events from Kafka continuously.
-
-The streaming application:
-
-1. Connects to the Kafka broker.
-2. Subscribes to the `fraud-stream-topic`.
-3. Reads incoming transaction messages.
-4. Parses and transforms the incoming data.
-5. Converts the data into a structured format.
-6. Writes the processed streaming data to Amazon S3.
-
-This allows the pipeline to process transactions continuously rather than waiting for a complete batch.
+<p align="center">
+  <img src="pics/streaming_pipeline.png" alt="Real-Time Streaming Pipeline" width="900"/>
+</p>
 
 ---
 
-## ☁️ Amazon S3 Data Lake
+### 4. Amazon EC2 Infrastructure
 
-The processed streaming transactions are stored in **Amazon S3**, which acts as the raw data lake layer of the pipeline.
+The real-time ingestion environment was deployed on **AWS EC2**.
 
-The data is stored in **Parquet** format to provide efficient storage and querying for downstream processing.
+The EC2 instance provided the compute environment for running the Kafka-based streaming infrastructure and the ingestion services.
 
-Example structure:
+The environment was configured to support:
+
+* Kafka broker
+* Kafka producer
+* Spark streaming consumer
+* Docker containers
+* AWS S3 connectivity
+
+```text
+AWS EC2
+│
+├── Docker
+│   └── Kafka
+│
+├── Transaction Producer
+│
+└── Spark Streaming Consumer
+```
+
+<p align="center">
+  <img src="pics/ec2_instance.png" alt="AWS EC2 Ingestion Server" width="800"/>
+</p>
+
+---
+
+### 5. Dockerized Kafka Environment
+
+Kafka was deployed using **Docker**, making the streaming environment easier to configure, start, stop, and reproduce.
+
+The Kafka services were managed using **Docker Compose**.
+
+```text
+Docker Compose
+      │
+      ▼
+┌─────────────────────┐
+│ Kafka Container     │
+│                     │
+│ Broker               │
+│ Topic                │
+│ Networking           │
+└─────────────────────┘
+```
+
+<p align="center">
+  <img src="pics/docker_kafka.png" alt="Docker Kafka Environment" width="800"/>
+</p>
+
+The Dockerized setup allowed the Kafka infrastructure to run consistently within the AWS EC2 environment.
+
+---
+
+### 6. Kafka Producer
+
+A Python-based producer was implemented to continuously publish transaction events to Kafka.
+
+The producer sends transactions to:
+
+```text
+fraud-stream-topic
+```
+
+The streaming process can be summarized as:
+
+```text
+Transaction Generator
+        │
+        ▼
+ Python Kafka Producer
+        │
+        ▼
+    Kafka Broker
+        │
+        ▼
+fraud-stream-topic
+```
+
+<p align="center">
+  <img src="pics/kafka_producer.png" alt="Kafka Producer Streaming Transactions" width="800"/>
+</p>
+
+The producer was designed to simulate a continuous stream of credit card transactions rather than sending the entire dataset at once.
+
+---
+
+### 7. Spark Structured Streaming
+
+**Spark Structured Streaming** acts as the bridge between Kafka and the S3 data lake.
+
+The Spark application continuously consumes Kafka messages and processes them as streaming micro-batches.
+
+The main processing flow is:
+
+```text
+Kafka Messages
+      │
+      ▼
+Read Stream
+      │
+      ▼
+Parse Transaction Data
+      │
+      ▼
+Apply Schema
+      │
+      ▼
+Transform / Clean
+      │
+      ▼
+Write Stream
+      │
+      ▼
+Parquet Files
+      │
+      ▼
+Amazon S3
+```
+
+<p align="center">
+  <img src="pics/spark_streaming.png" alt="Spark Structured Streaming" width="850"/>
+</p>
+
+Spark Structured Streaming enables the pipeline to process transactions continuously as new events arrive.
+
+---
+
+### 8. Writing Streaming Data to Amazon S3
+
+After processing, Spark writes the streaming transactions to **Amazon S3**.
+
+The data is stored in **Parquet** format.
+
+Example S3 structure:
 
 ```text
 s3://<bucket-name>/
@@ -118,17 +292,15 @@ s3://<bucket-name>/
         └── *.parquet
 ```
 
-### Why Parquet?
+<p align="center">
+  <img src="pics/s3_bucket.png" alt="Amazon S3 Transaction Data" width="850"/>
+</p>
 
-Parquet was selected because it:
+---
 
-* Uses columnar storage
-* Provides efficient compression
-* Reduces storage requirements
-* Improves analytical query performance
-* Works efficiently with Spark and other big-data tools
+### 9. Parquet Format & Partitioning
 
-### Why Partition the Data?
+The streaming output is stored using **Parquet**, a columnar storage format optimized for analytical workloads.
 
 The data is partitioned by transaction date:
 
@@ -136,43 +308,24 @@ The data is partitioned by transaction date:
 trans_date=YYYY-MM-DD
 ```
 
-This allows downstream queries to scan only the relevant partitions instead of reading the entire dataset.
+This provides several benefits:
+
+* Efficient storage
+* Compression
+* Faster downstream processing
+* Columnar access
+* Better compatibility with Spark and Databricks
+* Partition pruning for date-based queries
+
+For example, when processing transactions for a specific date, downstream engines can read only the corresponding partition instead of scanning the complete dataset.
 
 ---
 
-## 🛠️ Technologies Used
+### 10. Streaming Checkpoints
 
-| Technology       | Purpose                                  |
-| ---------------- | ---------------------------------------- |
-| **Python**       | Data generation and streaming scripts    |
-| **Apache Kafka** | Real-time event streaming                |
-| **Apache Spark** | Structured Streaming and data processing |
-| **AWS S3**       | Cloud data lake storage                  |
-| **Parquet**      | Optimized storage format                 |
-| **Docker**       | Containerization of Kafka components     |
-| **AWS EC2**      | Hosting the ingestion environment        |
+The Spark Structured Streaming application uses **checkpoints** to maintain streaming state and track processing progress.
 
----
-
-## 📂 Main Components
-
-### `stream_producer.py`
-
-Responsible for generating and publishing transaction events to Kafka.
-
-```text
-Transaction Generator
-        │
-        ▼
-Kafka Producer
-        │
-        ▼
-fraud-stream-topic
-```
-
-### Spark Streaming Consumer
-
-The Spark streaming application consumes the Kafka topic and writes the incoming data to S3.
+Checkpoints allow the streaming job to recover from failures and continue processing from its previous state rather than restarting the entire stream from the beginning.
 
 ```text
 Kafka
@@ -180,132 +333,97 @@ Kafka
   ▼
 Spark Structured Streaming
   │
-  ▼
-Transformation
-  │
-  ▼
-Parquet
+  ├──────────────► Checkpoint Location
   │
   ▼
 Amazon S3
 ```
 
-### `start_pipeline.sh`
-
-A startup script is used to simplify execution of the ingestion pipeline.
-
-It starts the required services and launches the streaming producer and Spark consumer.
+This is particularly important for a continuously running fraud detection pipeline where data should not be unnecessarily reprocessed.
 
 ---
 
-## 🚀 Running the Ingestion Pipeline
+### 11. End-to-End AWS Data Flow
 
-### 1. Start Kafka
-
-Start the Kafka environment using Docker Compose.
-
-```bash
-docker compose up -d
-```
-
-Verify that the Kafka containers are running:
-
-```bash
-docker ps
-```
-
----
-
-### 2. Start the Streaming Pipeline
-
-Run:
-
-```bash
-./start_pipeline.sh
-```
-
-The script starts the required components and launches the streaming pipeline.
-
----
-
-### 3. Verify Kafka Messages
-
-Check the Kafka producer logs to verify that transaction events are being published to:
+The complete ingestion process combines the historical and real-time paths:
 
 ```text
-fraud-stream-topic
+                    ┌──────────────────────────┐
+                    │     Historical Data      │
+                    └────────────┬─────────────┘
+                                 │
+                                 ▼
+                           ┌───────────┐
+                           │ Amazon S3 │
+                           └─────┬─────┘
+                                 │
+                                 │
+                                 │
+┌─────────────────────┐          │
+│ Real-Time Generator │          │
+└──────────┬──────────┘          │
+           │                     │
+           ▼                     │
+     ┌────────────┐              │
+     │   Kafka    │              │
+     └─────┬──────┘              │
+           │                     │
+           ▼                     │
+ ┌──────────────────────┐        │
+ │ Spark Structured     │        │
+ │ Streaming            │        │
+ └──────────┬───────────┘        │
+            │                    │
+            ▼                    ▼
+          ┌─────────────────────────┐
+          │       Amazon S3         │
+          │       Data Lake         │
+          └────────────┬────────────┘
+                       │
+                       ▼
+              Databricks / Spark
+                       │
+                       ▼
+              Feature Engineering
+                       │
+                       ▼
+                 ML Scoring
 ```
 
 ---
 
-### 4. Verify Data in S3
+### 12. Technologies Used
 
-After Spark processes the Kafka events, the resulting Parquet files should appear in the configured S3 bucket.
-
-Example:
-
-```text
-s3://<bucket-name>/transactions/
-```
-
----
-
-## 🔐 AWS Configuration
-
-The ingestion application requires access to the AWS environment in order to write data to S3.
-
-The following configuration values should be provided through environment variables or the project's configuration mechanism:
-
-```text
-AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY
-AWS_DEFAULT_REGION
-S3_BUCKET_NAME
-```
-
-**Never commit AWS credentials or other secrets to GitHub.**
-
-For production environments, IAM roles should be preferred over hard-coded credentials.
+| Technology         | Purpose                                   |
+| :----------------- | :---------------------------------------- |
+| **AWS EC2**        | Hosting the ingestion environment         |
+| **Amazon S3**      | Cloud data lake / raw data storage        |
+| **Apache Kafka**   | Real-time event streaming                 |
+| **Python**         | Transaction generation and Kafka producer |
+| **Apache Spark**   | Structured Streaming and data processing  |
+| **Docker**         | Containerization of Kafka services        |
+| **Docker Compose** | Kafka environment orchestration           |
+| **Parquet**        | Optimized transaction data storage        |
 
 ---
 
-## 📊 Result
+### 13. Key Responsibilities
 
-The ingestion layer provides a continuous pipeline:
+My contribution to the project covered the complete ingestion path from transaction generation to the S3 data lake:
 
-```text
-Transaction Events
-       ↓
-    Kafka
-       ↓
-Spark Structured Streaming
-       ↓
-    Parquet
-       ↓
-     AWS S3
-       ↓
-Databricks / Fraud Detection
-       ↓
-Snowflake Data Warehouse
-       ↓
-Power BI / Analytics
-```
+* Designed the **AWS-based data ingestion architecture**.
+* Configured and managed the **AWS EC2** ingestion environment.
+* Containerized the Kafka infrastructure using **Docker and Docker Compose**.
+* Implemented the **Python transaction producer**.
+* Configured the `fraud-stream-topic` Kafka topic.
+* Implemented **real-time transaction streaming** through Kafka.
+* Implemented **Spark Structured Streaming** for Kafka consumption.
+* Configured the streaming pipeline to write processed transactions to **Amazon S3**.
+* Used **Parquet** as the storage format.
+* Implemented **date-based partitioning** in S3.
+* Configured **streaming checkpoints** for reliable continuous processing.
+* Implemented and validated both **historical data ingestion** and **real-time streaming ingestion**.
+* Tested the complete flow from **transaction generation → Kafka → Spark → S3**.
+* Prepared the S3 data layer for consumption by the downstream **Databricks Machine Learning pipeline**.
 
-This layer enables the rest of the TransactSafe system to consume transaction data continuously and provides scalable cloud storage for downstream fraud detection, historical analysis, and reporting.
-
----
-
-## 👩‍💻 Contribution Summary
-
-**My responsibility:** Streaming Data Ingestion & S3 Data Lake
-
-* Designed and implemented the Kafka-based ingestion flow.
-* Developed the transaction streaming producer.
-* Configured Kafka for real-time transaction events.
-* Implemented Spark Structured Streaming to consume Kafka data.
-* Configured streaming output to Amazon S3.
-* Used Parquet for efficient data storage.
-* Implemented date-based partitioning in S3.
-* Containerized Kafka components using Docker.
-* Configured the ingestion environment on AWS EC2.
-* Validated the end-to-end flow from transaction generation to S3 storage.
+> **Output of this stage:** A continuously updated AWS S3 data lake containing historical and real-time transaction data in partitioned Parquet format, ready for downstream feature engineering, real-time fraud scoring, and model retraining.
