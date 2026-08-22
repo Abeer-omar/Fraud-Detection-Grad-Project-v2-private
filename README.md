@@ -149,9 +149,9 @@ The historical dataset provides the foundation for:
 * Fraud analysis
 * Periodic model retraining
 
+<img width="1876" height="823" alt="historical s3" src="https://github.com/user-attachments/assets/8b93caa2-b898-4b86-95bb-b987b8afb795" />
 ---
 
-<img width="1876" height="823" alt="historical s3" src="https://github.com/user-attachments/assets/8b93caa2-b898-4b86-95bb-b987b8afb795" />
 
 
 ## 1.4 Real-Time Streaming Mode
@@ -214,11 +214,10 @@ Real-Time Data
 
 This makes the streaming pipeline representative of a real-world fraud detection scenario where the model must predict fraud from the available transaction information.
 
----
-
 <img width="1881" height="875" alt="streaming s3" src="https://github.com/user-attachments/assets/900c550a-5128-4b9e-8fc6-d4cf2c20bf15" />
 
 <img width="1847" height="765" alt="streaming s3 trans_date" src="https://github.com/user-attachments/assets/02a11a05-c769-4971-92d9-03cabdc45211" />
+---
 
 
 ## 1.6 AWS Infrastructure
