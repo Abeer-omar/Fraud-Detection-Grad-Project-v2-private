@@ -96,10 +96,6 @@ The workflow first checks whether the historical dataset already exists.
                 Historical CSV       stream_batch_*.csv
 ```
 
-<p align="center">
-  <img src="pics/ingestion_flow.png" alt="Historical and Streaming Data Preparation Flow" width="650"/>
-</p>
-
 ---
 
 ## 1.3 Historical Data Mode
@@ -154,6 +150,9 @@ The historical dataset provides the foundation for:
 * Periodic model retraining
 
 ---
+
+<img width="1876" height="823" alt="historical s3" src="https://github.com/user-attachments/assets/8b93caa2-b898-4b86-95bb-b987b8afb795" />
+
 
 ## 1.4 Real-Time Streaming Mode
 
@@ -217,6 +216,11 @@ This makes the streaming pipeline representative of a real-world fraud detection
 
 ---
 
+<img width="1881" height="875" alt="streaming s3" src="https://github.com/user-attachments/assets/900c550a-5128-4b9e-8fc6-d4cf2c20bf15" />
+
+<img width="1847" height="765" alt="streaming s3 trans_date" src="https://github.com/user-attachments/assets/02a11a05-c769-4971-92d9-03cabdc45211" />
+
+
 ## 1.6 AWS Infrastructure
 
 The ingestion environment was deployed on **Amazon Web Services (AWS)**.
@@ -248,11 +252,6 @@ The EC2 environment hosted the services required for generating and streaming tr
                          ▼
                     Amazon S3
 ```
-
-<p align="center">
-  <img src="pics/aws_architecture.png" alt="AWS Data Ingestion Architecture" width="900"/>
-</p>
-
 ---
 
 ## 1.7 Dockerized Kafka Infrastructure
@@ -464,9 +463,6 @@ The ingestion directory is organized as follows:
 └── stop_pipeline.sh
 ```
 
-<p align="center">
-  <img src="pics/ingestion_github_structure.png" alt="Data Streaming and Ingestion GitHub Structure" width="850"/>
-</p>
 
 ---
 
