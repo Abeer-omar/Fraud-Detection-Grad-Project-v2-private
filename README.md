@@ -47,9 +47,8 @@ A transaction record contains fields such as:
 • merch_long           → Merchant longitude
 ```
 
-<p align="center">
-  <img src="pics/transaction_schema.png" alt="Transaction Data Schema" width="800"/>
-</p>
+<img width="976" height="816" alt="TransactSafe Record" src="https://github.com/user-attachments/assets/d89004a9-d0dc-47c5-858e-66c39f02d8c2" />
+
 
 > **Note:** The screenshot used in the repository should contain anonymized/redacted customer and card information.
 
